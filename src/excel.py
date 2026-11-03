@@ -16,7 +16,8 @@ def get_period(path, df):
 
 def read_section(path, title):
     """Return the rows under a section title as a DataFrame, stopping at the first empty row."""
-    sheet = xlrd.open_workbook(path).sheet_by_index(0)
+    # CareLink sometimes writes .xls files with a slightly malformed internal structure that Excel opens fine
+    sheet = xlrd.open_workbook(path, ignore_workbook_corruption=True).sheet_by_index(0)
 
     title_row = None
     for r in range(sheet.nrows):
