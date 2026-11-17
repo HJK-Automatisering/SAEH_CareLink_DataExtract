@@ -34,19 +34,40 @@ if defined OLD_HEAD if not defined CARELINK_UPDATED (
 	)
 )
 
-rem Install the Python packages the first time, and again whenever requirements.txt changes.
-rem .requirements-installed is a copy of the requirements.txt that was last installed successfully on this PC.
-fc /b requirements.txt .requirements-installed >nul 2>&1 || (
+rem Find Python, in this order:
+rem   .venv   the project's own Python 3.14 made by Setup.bat, so other Python versions on the PC do not matter
+rem   python  if it works, otherwise the "py" launcher (Python installed without "Add python.exe to PATH")
+rem Running it, not just finding it, skips the Microsoft Store shortcut that only says Python is not installed.
+set "PY="
+if exist ".venv\Scripts\python.exe" (.venv\Scripts\python.exe -c "import sys" >nul 2>&1 && set "PY=.venv\Scripts\python.exe")
+if not defined PY (python -c "import sys" >nul 2>&1 && set "PY=python")
+if not defined PY (py -c "import sys" >nul 2>&1 && set "PY=py")
+if not defined PY (
+	echo.
+	echo Python was not found on this PC.
+	echo Run Setup.bat in this folder: it installs Python 3.14 and everything else CareLink Extract needs.
+	echo.
+	echo You can close this window now.
+	popd
+	goto wait
+)
+
+rem Install the Python packages the first time, again whenever requirements.txt changes,
+rem and again when another Python is used (for example after installing a different Python version).
+rem .requirements-installed holds requirements.txt plus the Python it was installed into, from the last successful install.
+set "REQ_CHECK=%TEMP%\carelink-requirements-check.txt"
+(type requirements.txt & echo. & %PY% -c "import sys; print(sys.executable, sys.version)") > "%REQ_CHECK%" 2>nul
+fc /b "%REQ_CHECK%" .requirements-installed >nul 2>&1 || (
 	echo Installing Python packages...
-	python -m pip install -r requirements.txt --quiet --disable-pip-version-check && (
-		copy /y requirements.txt .requirements-installed >nul
+	%PY% -m pip install -r requirements.txt --quiet --disable-pip-version-check && (
+		copy /y "%REQ_CHECK%" .requirements-installed >nul
 	) || (
 		echo Could not install the Python packages. See the error above.
 	)
 )
 
 echo Starting CareLink data extract...
-python -m src.main %*
+%PY% -m src.main %*
 set RESULT=%errorlevel%
 popd
 
