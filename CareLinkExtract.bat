@@ -24,10 +24,6 @@ if defined OLD_HEAD if not defined CARELINK_UPDATED (
 	if errorlevel 1 (
 		echo Could not update from GitHub. Running the current version.
 	) else (
-		git diff --quiet %OLD_HEAD% HEAD -- requirements.txt || (
-			echo Installing updated Python packages...
-			python -m pip install -r requirements.txt --quiet --disable-pip-version-check || echo Could not install the updated packages.
-		)
 		git diff --quiet %OLD_HEAD% HEAD -- CareLinkExtract.bat || (
 			echo The launcher was updated. Restarting...
 			popd
@@ -35,6 +31,17 @@ if defined OLD_HEAD if not defined CARELINK_UPDATED (
 			cmd /c ""%~f0" %*"
 			exit /b
 		)
+	)
+)
+
+rem Install the Python packages the first time, and again whenever requirements.txt changes.
+rem .requirements-installed is a copy of the requirements.txt that was last installed successfully on this PC.
+fc /b requirements.txt .requirements-installed >nul 2>&1 || (
+	echo Installing Python packages...
+	python -m pip install -r requirements.txt --quiet --disable-pip-version-check && (
+		copy /y requirements.txt .requirements-installed >nul
+	) || (
+		echo Could not install the Python packages. See the error above.
 	)
 )
 

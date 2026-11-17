@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Marker written by CareLinkExtract.bat after installing requirements.txt
+.requirements-installed
